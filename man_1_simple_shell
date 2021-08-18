@@ -16,8 +16,15 @@ The shell is a command that reads lines from either a file or the terminal, inte
 enerally executes other commands. It is the program that is running when a user logs into the syst
 em.
 
-.SS Invocation
-A
+.SH Invocation
+The GNU comipiler will be used to compile simple shell, preferrably using the below flags with gcc.
+.sp
+.B $ gcc -Wall -Werror -Wextra -pedantic *.c -o hsh NOTE: the wildcard(*c) used enables all related .c files to be compiled concurrently.
+
+.I interactive
+simple shell can be invoked by typing ./simple_shell. Meanwhile, a
+.I non-interactive
+simple shell can also be invoked via a pipe (e.g. echo "/bin/ls" | ./simple_shell).
 
 .SH EXECUTABLES                                                                                   
 The following actions are taaken after commands has been split into words and it results in a simp
