@@ -1,0 +1,116 @@
+.TH SIMPLE_SHELL 1 "18 August 2021" "1.0" "custom man page"
+                                                                                                  
+.SH NAME                                        
+.B Simple Shell                         
+- a program which provides a user interface.                                                      
+                                                                                                  
+.SH SYNOPSIS
+.B Simple Shell
+                                                                                                  
+.SH DESCRIPTION
+Simple shell is a command language interpreter that executes commands read from the standard input
+ device (keyboard) or from a plain text file.
+                                                     
+.SH OVERVIEW
+The shell is a command that reads lines from either a file or the terminal, interprets them, and g
+enerally executes other commands. It is the program that is running when a user logs into the syst
+em.
+
+.SS Invocation
+A
+
+.SH EXECUTABLES                                                                                   
+The following actions are taaken after commands has been split into words and it results in a simp
+le command and an optional list of arguments.
+.sp
+If the name is neither a shell function nor a builtin, and contains no slashes, the simple shell s
+earches each element of the environmental variable PATH for a directory containing an executable f
+ile by that name. If the search is unsuccessful, the simple shell prints an error message "Error: 
+File or description not found."                                                                   
+.SS Sample Functions
+.sp
+echo
+.I [arguments]
+        prints to standard output the argument(s) given and prints a newline                      
+.sp
+pwd                                                                                         
+        prints working directories
+.sp
+cd                                                                                        
+        changes directory and updates environmental variables OLDPWD and PWD
+.sp
+exit
+        exits out of simple shell and returns to user's original shell
+.sp
+ls
+.I [[flags]...[arguments]]
+	lists files in the current directory according to the flags given by user                 
+.sp
+rm                                  
+        delete file in cureent directory
+.sp                                                                                          
+rmdir
+        delete folder in current directory
+.sp                                                                                               
+mkdir
+        create folder in current directory.
+.sp
+env
+      prints environmental variables
+.sp
+setenv                                                                                            
+      creates non-existing or modifies existing environmental variable within shell session.
+.sp
+unsetenv
+      removes existing environmental variable within shell session
+.SH EXAMPLE
+To
+.I invoke
+simple shell:
+
+.sp
+.RS
+
+(your_terminal)$ ./simple_shell
+.RE 
+.RS
+.I $
+.RE
+.sp
+Sample Usage:
+.sp
+.RS
+.I $
+echo "This is pretty cool!
+.RE
+.RS
+.I This is pretty cool!
+.RE
+.RS
+.I $
+ls -al /tmp 
+.RE
+.RS
+.I total 4
+.RE
+.RS                       
+.I drwx------  1 root root  4096 Aug 18 05:29 .
+.RE
+.sp
+To leave simple shell and return to your terminal:
+.sp
+.RS 
+.I $
+exit
+.RE
+.RS
+(your_terminal)$
+.RE
+
+.SH BUGS
+No known bugs
+.SH SEE ALSO
+.I bash(1), sh(1), ksh(1), csh(1).
+
+.SH AUTHOR
+Oghenefejiro Eva Gbaje & Edward Lampoh.
