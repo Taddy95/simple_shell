@@ -3,8 +3,10 @@ README.md
 _putchar.c
 built.c
 error_h.c
+eva_n_eddie
 execute.c
 helper_functions.c
+hsh
 main-env.c
 man_1_simple_shell
 memory_management.c
@@ -15,3 +17,4 @@ signals_handler.c
 strint_helper.c
 test
 test_ls_2
+test_ls_3
