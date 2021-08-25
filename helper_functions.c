@@ -130,6 +130,7 @@ char *_strconcat(char *s1, char *s2)
 /**
  * _strcmp - Compares pointers to two strings.
  * @s2: A pointer to the second string to be compared.
+ * @s1: A pointer to the first string to be compared.
  * Return: If str1 < str2, the negative difference of the first unmatched
  * characters
  * If str1 == str2, 0,
