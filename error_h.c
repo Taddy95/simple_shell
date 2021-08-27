@@ -1,28 +1,77 @@
 #include "shell.h"
 
+
 /**
- * error_handler - write an error message if file is not found
- * @argv: the array of passed in function argument strings
- * @ar: array of tokens entered by the user
- * @cmdcount_int: the number of commands entered
- * @line: user input
- * @nline: user input without the nline character
+ * print_error - prints error messages to standard error
+ * @vars: pointer to struct of variables
+ * @msg: message to print
+ *
+ * Return: void
  */
-
-void error_handler(char **argv, char **ar, int cmdcount_int, char *line,
-		   char *nline)
+void print_error(vars_t *vars, char *msg)
 {
-	char *num;
+	char *count;
 
-	num = print_int(cmdcount_int);
-	write(STDERR_FILENO, argv[0], _strlen(argv[0]));
-	write(STDERR_FILENO, ": ", 2);
-	write(STDERR_FILENO, num, _strlen(num));
-	write(STDERR_FILENO, ": ", 2);
-	write(STDERR_FILENO, ar[0], _strlen(ar[0]));
-	write(STDERR_FILENO, ": ", 2);
-	write(STDERR_FILENO, "not found\n", 10);
-	free(num);
-	free_all(line, nline, ar);
-	exit(0);
+	_puts2(vars->argv[0]);
+	_puts2(": ");
+	count = _uitoa(vars->count);
+	_puts2(count);
+	free(count);
+	_puts2(": ");
+	_puts2(vars->av[0]);
+	if (msg)
+	{
+		_puts2(msg);
+	}
+	else
+		perror("");
+}
+
+/**
+ * _puts2 - prints a string to standard error
+ * @str: string to print
+ *
+ * Return: void
+ */
+void _puts2(char *str)
+{
+	ssize_t num, len;
+
+	num = _strlen(str);
+	len = write(STDERR_FILENO, str, num);
+	if (len != num)
+	{
+		perror("Fatal Error");
+		exit(1);
+	}
+
+}
+
+/**
+ * _uitoa - converts an unsigned int to a string
+ * @count: unsigned int to convert
+ *
+ * Return: pointer to the converted string
+ */
+char *_uitoa(unsigned int count)
+{
+	char *numstr;
+	unsigned int tmp, digits;
+
+	tmp = count;
+	for (digits = 0; tmp != 0; digits++)
+		tmp /= 10;
+	numstr = malloc(sizeof(char) * (digits + 1));
+	if (numstr == NULL)
+	{
+		perror("Fatal Error1");
+		exit(127);
+	}
+	numstr[digits] = '\0';
+	for (--digits; count; --digits)
+	{
+		numstr[digits] = (count % 10) + '0';
+		count /= 10;
+	}
+	return (numstr);
 }

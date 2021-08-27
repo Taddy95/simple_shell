@@ -16,69 +16,68 @@
 #include <errno.h>
 
 /**
- * struct path_s - linked list structure for PATH variable
- * @directory: directory to lookup
- * @next: pointer to the next node
+ * struct variables - variables
+ * @av: command line arguments
+ * @buffer: buffer of command
+ * @env: environment variables
+ * @count: count of commands entered
+ * @argv: arguments at opening of shell
+ * @status: exit status
  */
-
-typedef struct path_s
+typedef struct variables
 {
-	char *directory;
-	struct path_s *next;
-} linked_t;
+	char **av;
+	char *buffer;
+	char **env;
+	size_t count;
+	char **argv;
+	int status;
+	char **commands;
+} vars_t;
 
+/**
+ * struct builtins - struct for the builtin functions
+ * @name: name of builtin command
+ * @f: function for corresponding builtin
+ */
+typedef struct builtins
+{
+	char *name;
+	void (*f)(vars_t *);
+} builtins_t;
 
-int _putchar(char c);
+char **make_env(char **env);
+void free_env(char **env);
 
-/* exec.c */
-int execute_cmd(char **ar, char **env, char **av, char *line, char *nline,
-		int cmd_count);
+ssize_t _puts(char *str);
+char *_strdup(char *strtodup);
+int _strcmpr(char *strcmp1, char *strcmp2);
+char *_strcat(char *strc1, char *strc2);
+unsigned int _strlen(char *str);
 
-/* prompt.c */
-void shellPrompt(void);
+char **tokenize(char *buffer, char *delimiter);
+char **_realloc(char **ptr, size_t *size);
+char *new_strtok(char *str, const char *delim);
 
-/* shell.c */
-char **tokenize(char *line);
+void (*check_for_builtins(vars_t *vars))(vars_t *vars);
+void new_exit(vars_t *vars);
+void _env(vars_t *vars);
+void new_setenv(vars_t *vars);
+void new_unsetenv(vars_t *vars);
 
-/* path functions */
-linked_t *create_linkedt(char *str);
-linked_t *addnodes_list(char *str, linked_t *list);
-char *_getenv(const char *name, char **env);
-char *path_handler(char *str, char **env);
+void add_key(vars_t *vars);
+char **find_key(char **env, char *key);
+char *add_value(char *key, char *value);
+int _atoi(char *str);
 
+void check_for_path(vars_t *vars);
+int path_execute(char *command, vars_t *vars);
+char *find_path(char **env);
+int execute_cwd(vars_t *vars);
+int check_for_dir(char *str);
 
-/* error_handling */
-void error_handler(char **argv, char **ar, int cmdcount_int, char *line,
-		   char *nline);
+void print_error(vars_t *vars, char *msg);
+void _puts2(char *str);
+char *_uitoa(unsigned int count);
 
-/* str helper functions */
-int _strlen(char *buf);
-int _strcmp(char *s1, char *s2);
-char *_strdup(char *str);
-char *_concatenate(char *concatenate, char *s1, char *s2);
-char *_strconcat(char *s1, char *s2);
-
-/* builtin functions */
-int exit_handler(char **array, char *line, char *newline, int cmd_count);
-int cd_handler(char **array, char **env);
-int env_handler(char **env);
-int checkBuiltins(char **ar, char **env, char *line, char *newline,
-		  int cmd_count);
-
-
-/* strint functions */
-int _atoi(char *s);
-int tens_place(int i, char *s);
-char *print_int(int num);
-
-/* signal handler */
-void ctrlc_handler(int signum);
-int ctrld_handler(char *line);
-
-/* memory handling */
-char *_realloc(char *p);
-void free_list(linked_t *head);
-void free_tokens(char **t_array);
-void free_all(char *line, char *newline, char **t_array);
-
-#endif
+#endif /* _SHELL_H_ */

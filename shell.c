@@ -1,97 +1,68 @@
 #include "shell.h"
-#define DELIMITERS " \t\0"
+
+/* global variable for ^C handling */
+unsigned int sig_flag;
 
 /**
- * main - entry point
- * @ac: number of arguments passed
- * @av: array of strings of arguments passed
- * @env: the current environment
- * Return: 0 when EOF is reached - user presses Ctrl + D
+ * sig_handler - handles ^C signal interupt
+ * @uuv: unused variable (required for signal function prototype)
+ *
+ * Return: void
  */
-
-int main(int ac, char **av, char **env)
+static void sig_handler(int uuv)
 {
-	char *line, *newline;
-	size_t len = 0;
-	ssize_t lineSize;
-	char **t_array;
-	int cmdnum = 0;
-
-	(void)ac, (void)av;
-	while (1)
-	{
-		line = NULL;
-		len = 0;
-		cmdnum++;
-		if (isatty(STDIN_FILENO) == 1)
-			shellPrompt();
-		signal(SIGINT, ctrlc_handler);
-		lineSize = getline(&line, &len, stdin);
-		if (lineSize == EOF || lineSize == -1)
-			return (ctrld_handler(line));
-		if (line[0] == '\n')
-		{
-			free(line);
-			continue;
-		}
-		newline = _realloc(line);
-		if (newline == NULL)
-		{
-			free(line);
-			return (0);
-		}
-		t_array = tokenize(newline);
-		if (t_array == NULL)
-		{
-			free(line);
-			free(newline);
-			return (0);
-		}
-		execute_cmd(t_array, env, av, line, newline, cmdnum);
-		free_all(line, newline, t_array);
-	}
+	(void) uuv;
+	if (sig_flag == 0)
+		_puts("\n$ ");
+	else
+		_puts("\n");
 }
 
 /**
- * tokenize - splits user input into tokens and stores into array
- * @line: input string to split
- * Return: array of strings(tokens)
+ * main - main function for the shell
+ * @argc: number of arguments passed to main
+ * @argv: array of arguments passed to main
+ * @environment: array of environment variables
+ *
+ * Return: 0 or exit status, or ?
  */
-
-char **tokenize(char *line)
+int main(int argc __attribute__((unused)), char **argv, char **environment)
 {
-	int i = 0;
-	int t_count = 0;
-	char **t_array;
-	char *token, *t_copy;
+	size_t len_buffer = 0;
+	unsigned int is_pipe = 0, i;
+	vars_t vars = {NULL, NULL, NULL, 0, NULL, 0, NULL};
 
-	if (line == NULL)
-		return (NULL);
-	while (*(line + i) != '\0')
+	vars.argv = argv;
+	vars.env = make_env(environment);
+	signal(SIGINT, sig_handler);
+	if (!isatty(STDIN_FILENO))
+		is_pipe = 1;
+	if (is_pipe == 0)
+		_puts("$ ");
+	sig_flag = 0;
+	while (getline(&(vars.buffer), &len_buffer, stdin) != -1)
 	{
-		if (line[i] != ' ' && (line[i + 1] == ' ' || line[i + 1] == '\0'
-					|| line[i + 1] == '\t'))
-			t_count++;
-		i++;
-	}
-
-	i = 0;
-	t_array = malloc(sizeof(char *) * (t_count + 1));
-	if (t_array == NULL)
-		return (NULL);
-	token = strtok(line, DELIMITERS);
-	while (token != NULL)
-	{
-		t_copy = _strdup(token);
-		if (t_copy == NULL)
+		sig_flag = 1;
+		vars.count++;
+		vars.commands = tokenize(vars.buffer, ";");
+		for (i = 0; vars.commands && vars.commands[i] != NULL; i++)
 		{
-			free(t_array);
-			return (NULL);
+			vars.av = tokenize(vars.commands[i], "\n \t\r");
+			if (vars.av && vars.av[0])
+				if (check_for_builtins(&vars) == NULL)
+					check_for_path(&vars);
+			free(vars.av);
 		}
-		*(t_array + i) = t_copy;
-		token = strtok(NULL, DELIMITERS);
-		i++;
+		free(vars.buffer);
+		free(vars.commands);
+		sig_flag = 0;
+		if (is_pipe == 0)
+			_puts("$ ");
+		vars.buffer = NULL;
 	}
-	*(t_array + i) = NULL;
-	return (t_array);
+	if (is_pipe == 0)
+		_puts("\n");
+	free_env(vars.env);
+	free(vars.buffer);
+	exit(vars.status);
 }

@@ -1,126 +1,157 @@
 #include "shell.h"
 
 /**
- * exit_handler - handles exit builtin
- * @array: array of strings commands for execution
- * @line: user input
- * @newline: user input with newline truncated
- * @cmd_count: no of commands entered by the user
- * Return: 0 on success, or exit code specified by user
+ * check_for_builtins - checks if the command is a builtin
+ * @vars: variables
+ * Return: pointer to the function or NULL
  */
-int exit_handler(char **array, char *line, char *newline, int cmd_count)
+void (*check_for_builtins(vars_t *vars))(vars_t *vars)
 {
-	int num, j = 0;
-	char *cmdnum;
+	unsigned int i;
+	builtins_t check[] = {
+		{"exit", new_exit},
+		{"env", _env},
+		{"setenv", new_setenv},
+		{"unsetenv", new_unsetenv},
+		{NULL, NULL}
+	};
 
-	if (array[1] == NULL)
+	for (i = 0; check[i].f != NULL; i++)
 	{
-		free_all(line, newline, array);
-		exit(2);
+		if (_strcmpr(vars->av[0], check[i].name) == 0)
+			break;
 	}
-
-	else
-	{
-		num = _atoi(array[1]);
-		if (num == -1)
-		{
-			cmdnum = print_int(cmd_count);
-			write(STDERR_FILENO, array[0], 7);
-			write(STDERR_FILENO, cmdnum, _strlen(cmdnum));
-			write(STDERR_FILENO, ": exit: Illegal number: ", 24);
-			while (array[1][j] != '\0')
-				j++;
-			write(STDOUT_FILENO, array[1], j);
-			write(STDOUT_FILENO, "\n", 1);
-			return (0);
-		}
-		free_all(line, newline, array);
-		_exit(num);
-	}
+	if (check[i].f != NULL)
+		check[i].f(vars);
+	return (check[i].f);
 }
 
 /**
- * cd_handler - handles the cd builtin
- * @array:  array of command line strings
- * @env: environment variable
- * Return: 0 on success
+ * new_exit - exit program
+ * @vars: variables
+ * Return: void
  */
-
-int cd_handler(char **array, char **env)
+void new_exit(vars_t *vars)
 {
-	int i = 0;
-	char cwd[1024];
-	char *newdir;
+	int status;
 
-	if (array[1] == NULL)
+	if (_strcmpr(vars->av[0], "exit") == 0 && vars->av[1] != NULL)
 	{
-		if (chdir(_getenv("HOME", env)) == -1)
+		status = _atoi(vars->av[1]);
+		if (status == -1)
 		{
-			perror(array[0]);
-			write(STDERR_FILENO, "cd: can't cd to home\n", 21);
+			vars->status = 2;
+			print_error(vars, ": Illegal number: ");
+			_puts2(vars->av[1]);
+			_puts2("\n");
+			free(vars->commands);
+			vars->commands = NULL;
+			return;
 		}
+		vars->status = status;
 	}
-	else
-	{
-		getcwd(cwd, 1024);
-		while (cwd[i] != '\0')
-			i++;
-		cwd[i++] = '/';
-		cwd[i] = '\0';
-		newdir = _strconcat(cwd, array[1]);
-		if (newdir == NULL)
-			return (0);
-		if (chdir(newdir) == -1)
-		{
-			perror(array[0]);
-			write(STDERR_FILENO, "can't cd into directory\n", 24);
-		}
-		free(newdir);
-	}
-	return (0);
+	free(vars->buffer);
+	free(vars->av);
+	free(vars->commands);
+	free_env(vars->env);
+	exit(vars->status);
 }
+
 /**
- * env_handler - handles the env builtin
- * @env: environment variable
- * Return: 0 on success
+ * _env - prints the current environment
+ * @vars: struct of variables
+ * Return: void.
  */
-
-int env_handler(char **env)
+void _env(vars_t *vars)
 {
-	int i = 0, length = 0;
+	unsigned int i;
 
-	while (env[i] != NULL)
+	for (i = 0; vars->env[i]; i++)
 	{
-		length = _strlen(env[i]);
-		write(STDOUT_FILENO, env[i], length);
-		write(STDOUT_FILENO, "\n", 1);
-		i++;
+		_puts(vars->env[i]);
+		_puts("\n");
 	}
-	return (0);
+	vars->status = 0;
 }
+
 /**
- * checkBuiltins - check if command passed exist in the shell
- * @ar: array of strings to execute
- * @env: the environment variable
- * @line: user input
- * @newline: user input without newline character
- * @cdnum: number of commands entered by the user
+ * new_setenv - create a new environment variable, or edit an existing variable
+ * @vars: pointer to struct of variables
  *
- * Return: 0 when builtin command is found, 1 when builtin not found
+ * Return: void
  */
-
-int checkBuiltins(char **ar, char **env, char *line, char *newline, int cdnum)
+void new_setenv(vars_t *vars)
 {
-	if (ar == NULL || *ar == NULL)
-		return (1);
-	if (env == NULL || *env == NULL)
-		return (1);
-	if (_strcmp((ar[0]), "exit") == 0)
-		return (exit_handler(ar, line, newline, cdnum));
-	else if (_strcmp((ar[0]), "cd") == 0)
-		return (cd_handler(ar, env));
-	else if (_strcmp((ar[0]), "env") == 0)
-		return (env_handler(env));
+	char **key;
+	char *var;
+
+	if (vars->av[1] == NULL || vars->av[2] == NULL)
+	{
+		print_error(vars, ": Incorrect number of arguments\n");
+		vars->status = 2;
+		return;
+	}
+	key = find_key(vars->env, vars->av[1]);
+	if (key == NULL)
+		add_key(vars);
 	else
-		return (1);
+	{
+		var = add_value(vars->av[1], vars->av[2]);
+		if (var == NULL)
+		{
+			print_error(vars, NULL);
+			free(vars->buffer);
+			free(vars->commands);
+			free(vars->av);
+			free_env(vars->env);
+			exit(127);
+		}
+		free(*key);
+		*key = var;
+	}
+	vars->status = 0;
+}
+
+/**
+ * new_unsetenv - remove an environment variable
+ * @vars: pointer to a struct of variables
+ *
+ * Return: void
+ */
+void new_unsetenv(vars_t *vars)
+{
+	char **key, **newenv;
+
+	unsigned int i, j;
+
+	if (vars->av[1] == NULL)
+	{
+		print_error(vars, ": Incorrect number of arguments\n");
+		vars->status = 2;
+		return;
+	}
+	key = find_key(vars->env, vars->av[1]);
+	if (key == NULL)
+	{
+		print_error(vars, ": No variable to unset");
+		return;
+	}
+	for (i = 0; vars->env[i] != NULL; i++)
+		;
+	newenv = malloc(sizeof(char *) * i);
+	if (newenv == NULL)
+	{
+		print_error(vars, NULL);
+		vars->status = 127;
+		new_exit(vars);
+	}
+	for (i = 0; vars->env[i] != *key; i++)
+		newenv[i] = vars->env[i];
+	for (j = i + 1; vars->env[j] != NULL; j++, i++)
+		newenv[i] = vars->env[j];
+	newenv[i] = NULL;
+	free(*key);
+	free(vars->env);
+	vars->env = newenv;
+	vars->status = 0;
 }

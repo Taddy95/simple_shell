@@ -1,154 +1,118 @@
 #include "shell.h"
 
 /**
- * _strdup - returns pointer to allocated space containing copy of string
- * @str: string that will be copied into the space
- * Return: pointer to allocated space
+ * add_key - create a new environment variable
+ * @vars: pointer to struct of variables
+ *
+ * Return: void
  */
-
-char *_strdup(char *str)
+void add_key(vars_t *vars)
 {
-	int i = 0;
-	int length = 0;
-	char *string;
+	unsigned int i;
+	char **newenv;
 
-	if (str == NULL)
-		return (NULL);
-	while (*(str + i) != '\0')
+	for (i = 0; vars->env[i] != NULL; i++)
+		;
+	newenv = malloc(sizeof(char *) * (i + 2));
+	if (newenv == NULL)
 	{
-		length++;
-		i++;
+		print_error(vars, NULL);
+		vars->status = 127;
+		new_exit(vars);
 	}
-	i = 0;
-	string = malloc(sizeof(char) * length + 1);
-	if (string == NULL)
-		return (NULL);
-	while (*(str + i) != '\0')
+	for (i = 0; vars->env[i] != NULL; i++)
+		newenv[i] = vars->env[i];
+	newenv[i] = add_value(vars->av[1], vars->av[2]);
+	if (newenv[i] == NULL)
 	{
-		*(string + i) = *(str + i);
-		i++;
+		print_error(vars, NULL);
+		free(vars->buffer);
+		free(vars->commands);
+		free(vars->av);
+		free_env(vars->env);
+		free(newenv);
+		exit(127);
 	}
-	*(string + i) = '\0';
-	return (string);
+	newenv[i + 1] = NULL;
+	free(vars->env);
+	vars->env = newenv;
 }
 
 /**
- * _concatenate - concatenates two strings
- * @concatenate: memory space to concatenate the strings
- * @s1: str 1
- * @s2: str 2
- * Return: pointer to concatenated memory space
+ * find_key - finds an environment variable
+ * @env: array of environment variables
+ * @key: environment variable to find
+ *
+ * Return: pointer to address of the environment variable
  */
-
-char *_concatenate(char *concatenate, char *s1, char *s2)
+char **find_key(char **env, char *key)
 {
-	int concatcounter = 0;
-	int stringcounter = 0;
+	unsigned int i, j, len;
 
-
-	while (*(s1 + stringcounter) != '\0')
+	len = _strlen(key);
+	for (i = 0; env[i] != NULL; i++)
 	{
-		*(concatenate + concatcounter) = *(s1 + stringcounter);
-		concatcounter++;
-		stringcounter++;
+		for (j = 0; j < len; j++)
+			if (key[j] != env[i][j])
+				break;
+		if (j == len && env[i][j] == '=')
+			return (&env[i]);
 	}
-
-	stringcounter = 0;
-	while (*(s2 + stringcounter) != '\0')
-	{
-		*(concatenate + concatcounter) = *(s2 + stringcounter);
-		concatcounter++;
-		stringcounter++;
-	}
-
-	*(concatenate + concatcounter) = '\0';
-	return (concatenate);
+	return (NULL);
 }
 
 /**
- * _strlen - func to return the length of a string
- * @s: str param
- * Return: len of the string
+ * add_value - create a new environment variable string
+ * @key: variable name
+ * @value: variable value
+ *
+ * Return: pointer to the new string;
  */
-
-int _strlen(char *s)
+char *add_value(char *key, char *value)
 {
-	int len = 0;
-	int i = 0;
+	unsigned int len1, len2, i, j;
+	char *new;
 
-	if (s == NULL)
+	len1 = _strlen(key);
+	len2 = _strlen(value);
+	new = malloc(sizeof(char) * (len1 + len2 + 2));
+	if (new == NULL)
+		return (NULL);
+	for (i = 0; key[i] != '\0'; i++)
+		new[i] = key[i];
+	new[i] = '=';
+	for (j = 0; value[j] != '\0'; j++)
+		new[i + 1 + j] = value[j];
+	new[i + 1 + j] = '\0';
+	return (new);
+}
+
+/**
+ * _atoi - converts a string into an integer
+ * @str: string to convert
+ *
+ * Return: the integer value, or -1 if an error occurs
+ */
+int _atoi(char *str)
+{
+	unsigned int i, digits;
+	int num = 0, num_test;
+
+	num_test = INT_MAX;
+	for (digits = 0; num_test != 0; digits++)
+		num_test /= 10;
+	for (i = 0; str[i] != '\0' && i < digits; i++)
+	{
+		num *= 10;
+		if (str[i] < '0' || str[i] > '9')
+			return (-1);
+		if ((i == digits - 1) && (str[i] - '0' > INT_MAX % 10))
+			return (-1);
+		num += str[i] - '0';
+		if ((i == digits - 2) && (str[i + 1] != '\0') && (num > INT_MAX / 10))
+			return (-1);
+	}
+	if (i > digits)
 		return (-1);
-	while (s[i] != '\0')
-	{
-		len = len + 1;
-		i++;
-	}
-
-	return (len);
-}
-
-/**
- * _strconcat - appends src to the dest string
- * @s1: string s1
- * @s2: string s1
- * Return: concatenated string
- */
-char *_strconcat(char *s1, char *s2)
-{
-	int lengths1 = 0;
-	int lengths2 = 0;
-	char *concatenate;
-
-	if (s1 == NULL)
-	{
-		s1 = malloc(sizeof(char));
-		if (s1 == NULL)
-			return (NULL);
-		*s1 = '\0';
-	}
-	if (s2 == NULL)
-	{
-		s2 = malloc(sizeof(char));
-		if (s2 == NULL)
-			return (NULL);
-		*s2 = '\0';
-	}
-
-	lengths1 = _strlen(s1);
-	lengths2 = _strlen(s2);
-
-	concatenate = malloc(sizeof(char) * (lengths1 + lengths2 + 1));
-	if (concatenate == NULL)
-	{
-		free(s1);
-		free(s2);
-		return (NULL);
-	}
-	return (_concatenate(concatenate, s1, s2));
-}
-
-/**
- * _strcmp - Compares pointers to two strings.
- * @s2: A pointer to the second string to be compared.
- * @s1: A pointer to the first string to be compared.
- * Return: If str1 < str2, the negative difference of the first unmatched
- * characters
- * If str1 == str2, 0,
- * If str1 > str2, the positive difference of the first unmatched characters.
- */
-
-int _strcmp(char *s1, char *s2)
-{
-	while ((*s1 == *s2) && *s1 != '\0' && *s2 != '\0')
-	{
-		s1++;
-		s2++;
-	}
-
-	if ((*s1 == '\0') && (*s2 == '\0'))
-		return (0);
-	else if (*s1 > *s2)
-		return ((int)(*s1 - *s2));
-	else
-		return ((int)(*s1 - *s2));
+	return (num);
 }
